@@ -12,7 +12,13 @@ import (
 const prefix string = "cisco_facts_"
 
 var (
-	versionDesc        *prometheus.Desc
+	versionDesc   *prometheus.Desc
+	biosDesc      *prometheus.Desc
+	chassisIdDesc *prometheus.Desc
+	uptimeDesc    *prometheus.Desc
+	hostnameDesc  *prometheus.Desc
+	lastResetDesc *prometheus.Desc
+
 	memoryTotalDesc    *prometheus.Desc
 	memoryUsedDesc     *prometheus.Desc
 	memoryFreeDesc     *prometheus.Desc
@@ -25,6 +31,11 @@ var (
 func init() {
 	l := []string{"target"}
 	versionDesc = prometheus.NewDesc(prefix+"version", "Running OS version", append(l, "version"), nil)
+	biosDesc = prometheus.NewDesc(prefix+"bios_version", "Running BIOS version", append(l, "version"), nil)
+	chassisIdDesc = prometheus.NewDesc(prefix+"chassis_id", "Chassis ID, value is always zero", append(l, "chassis_id"), nil)
+	uptimeDesc = prometheus.NewDesc(prefix+"uptime_seconds", "Uptime in seconds", append(l), nil)
+	lastResetDesc = prometheus.NewDesc(prefix+"last_reset_usecs", "Last reset", append(l, "reason", "service", "version", "ctime"), nil)
+	hostnameDesc = prometheus.NewDesc(prefix+"hostname", "Switch hostname", append(l, "hostname"), nil)
 
 	memoryTotalDesc = prometheus.NewDesc(prefix+"memory_total", "Total memory", append(l, "type"), nil)
 	memoryUsedDesc = prometheus.NewDesc(prefix+"memory_used", "Used memory", append(l, "type"), nil)
@@ -72,6 +83,25 @@ func (c *factsCollector) CollectVersion(client *rpc.Client, ch chan<- prometheus
 	return nil
 }
 
+func (c *factsCollector) CollectVersionJson(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
+	out, err := client.RunCommand("show version | json")
+	if err != nil {
+		return err
+	}
+	item, err := c.ParseVersionJson(client.OSType, out)
+	if err != nil {
+		return err
+	}
+
+	ch <- prometheus.MustNewConstMetric(chassisIdDesc, prometheus.GaugeValue, 0, append(labelValues, item.ChassisID)...)
+	ch <- prometheus.MustNewConstMetric(hostnameDesc, prometheus.GaugeValue, 0, append(labelValues, item.HostName)...)
+	ch <- prometheus.MustNewConstMetric(uptimeDesc, prometheus.GaugeValue, float64(item.KernUptmDays*86400+item.KernUptmHrs*3600+item.KernUptmMins*60+item.KernUptmSecs), append(labelValues)...)
+	ch <- prometheus.MustNewConstMetric(lastResetDesc, prometheus.GaugeValue, float64(item.RrUsecs), append(labelValues, item.RrReason, item.RrService, item.RrSysVer, item.RrCtime)...)
+	ch <- prometheus.MustNewConstMetric(biosDesc, prometheus.GaugeValue, 0, append(labelValues, item.BiosVerStr)...)
+
+	return nil
+}
+
 // CollectMemory collects memory informations from Cisco
 func (c *factsCollector) CollectMemory(client *rpc.Client, ch chan<- prometheus.Metric, labelValues []string) error {
 	out, err := client.RunCommand("show process memory")
@@ -114,6 +144,11 @@ func (c *factsCollector) Collect(client *rpc.Client, ch chan<- prometheus.Metric
 	if client.Debug && err != nil {
 		log.Printf("CollectVersion for %s: %s\n", labelValues[0], err.Error())
 	}
+	err = c.CollectVersionJson(client, ch, labelValues)
+	if client.Debug && err != nil {
+		log.Printf("CollectVersionJson for %s: %s\n", labelValues[0], err.Error())
+	}
+
 	err = c.CollectMemory(client, ch, labelValues)
 	if client.Debug && err != nil {
 		log.Printf("CollectMemory for %s: %s\n", labelValues[0], err.Error())
