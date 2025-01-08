@@ -1,7 +1,9 @@
 package facts
 
 import (
+	"encoding/json"
 	"errors"
+	"log"
 	"regexp"
 	"strings"
 
@@ -28,6 +30,36 @@ func (c *factsCollector) ParseVersion(ostype string, output string) (VersionFact
 		return VersionFact{Version: ostype + "-" + matches[1]}, nil
 	}
 	return VersionFact{}, errors.New("Version string not found")
+}
+
+func (c *factsCollector) ParseVersionJson(ostype string, output string) (VersionInfo, error) {
+
+	if ostype != rpc.IOSXE && ostype != rpc.NXOS && ostype != rpc.IOS {
+		return VersionInfo{}, errors.New("'show version' is not implemented for " + ostype)
+	}
+
+	re := regexp.MustCompile(`(?m)^.*\n(.*?)\n.*$`)
+
+	// Extract the content
+	match := re.FindStringSubmatch(output)
+	if len(match) <= 1 {
+		return VersionInfo{}, nil
+	}
+
+	outputJsonString := match[1]
+
+	var versionInfo = VersionInfo{}
+	err := json.Unmarshal([]byte(outputJsonString), &versionInfo)
+	if err != nil {
+		log.Printf("error decoding json: %v", err)
+		if e, ok := err.(*json.SyntaxError); ok {
+			log.Printf("syntax error at byte offset %d", e.Offset)
+		}
+		return VersionInfo{}, err
+	}
+
+	return versionInfo, nil
+
 }
 
 // ParseMemory parses cli output and tries to find current memory usage
