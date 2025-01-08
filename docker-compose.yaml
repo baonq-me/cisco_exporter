@@ -1,0 +1,118 @@
+configs:
+  # hostname:port:database:username:password
+  cisco_exporter_config_file:
+    content: |
+      
+      debug: true
+      legacy_ciphers: true
+      timeout: 25
+      batch_size: 10000
+      username: admin
+      key_file: /app/ssh.key
+      
+      devices:
+        - host: s1.example.com
+          features:
+            bgp: false
+      
+      features:
+        bgp: false
+        environment: true
+        facts: true
+        interfaces: true
+        optics: true
+
+services:
+  cisco_exporter:
+    build:
+      context: .
+      platforms:
+        - linux/amd64
+      #  - linux/aarch64
+      dockerfile: Dockerfile
+    #env_file:
+    #  - .env
+    image: quocbao747/cisco_exporter:1.0
+    container_name: cisco_exporter
+    hostname: cisco_exporter
+    domainname: cisco_exporter
+    restart: always
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+    platform: linux/amd64
+    volumes:
+      - "/home/user/.ssh/id_rsa:/app/ssh.key"
+    configs:
+      - source: cisco_exporter_config_file
+        target: /app/config.yml
+    ports:
+      - "9362:9362"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - local-net
+
+
+  # https://grafana.com/docs/grafana/latest/setup-grafana/installation/docker/
+  grafana:
+    image: grafana/grafana-oss:9.5.15-ubuntu
+    container_name: grafana
+    restart: always
+    environment:
+      - GF_SERVER_ROOT_URL=http://127.0.0.1:3000/
+    #  - GF_INSTALL_PLUGINS=grafana-clock-panel
+    ports:
+      - '3000:3000'
+    volumes:
+      - 'grafana_storage:/var/lib/grafana'
+      - './docker/grafana/grafana.ini:/etc/grafana/grafana.ini'
+      - './docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources'
+      - './docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards'
+      - './docker/grafana/dashboards:/var/lib/grafana/dashboards'
+    networks:
+      - local-net
+    depends_on:
+      victoria-metrics:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # https://github.com/VictoriaMetrics/VictoriaMetrics/blob/master/deployment/docker/docker-compose.yml
+  victoria-metrics:
+    container_name: victoria-metrics
+    image: victoriametrics/victoria-metrics:v1.97.1
+    restart: always
+    ports:
+      - "8428:8428"
+    command:
+      - "--storageDataPath=/storage"
+      - "--httpListenAddr=:8428"
+      - "--http.connTimeout=3s"
+      - "--promscrape.config=/etc/victoria-metrics/victoria-metrics.yml"
+    healthcheck:
+      test: [ "CMD", "wget", "-q",  "-O", "/dev/null",  "http://127.0.0.1:8428/metrics"]
+      start_period: 3s
+      interval: 3s
+      timeout: 3s
+      retries: 3
+    volumes:
+      - "vmdata:/storage"
+      - "./docker/victoria-metrics/victoria-metrics.yml:/etc/victoria-metrics/victoria-metrics.yml"
+    networks:
+      - local-net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+volumes:
+  grafana_storage:
+  vmdata:
+
+networks:
+  local-net:
