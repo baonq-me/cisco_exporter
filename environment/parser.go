@@ -133,9 +133,9 @@ func (c *environmentCollector) Parse(ostype string, output string) ([]Environmen
 func getStatus(status string) int {
 	lowerStatus := strings.ToLower(status)
 	if lowerStatus == "good" || lowerStatus == "ok" || lowerStatus == "normal" {
-		return 1
-	} else {
 		return 0
+	} else {
+		return 1
 	}
 }
 

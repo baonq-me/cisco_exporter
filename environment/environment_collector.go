@@ -28,11 +28,11 @@ func init() {
 	temperaturesDesc = prometheus.NewDesc(prefix+"sensor_temp", "Sensor temperatures", []string{"target", "item"}, nil)
 	powerSupplyInDesc = prometheus.NewDesc(prefix+"power_in", "Input power in Watts", []string{"target", "item", "detail"}, nil)
 	powerSupplyOutDesc = prometheus.NewDesc(prefix+"power_out", "Output power in Watts", []string{"target", "item", "detail"}, nil)
-	powerSupplyStatusDesc = prometheus.NewDesc(prefix+"power_up", "Status of power supplies (1 OK, 0 Something is wrong)", []string{"target", "item", "detail"}, nil)
+	powerSupplyStatusDesc = prometheus.NewDesc(prefix+"power_up", "Status of power supplies (0 OK, 1 Something is wrong)", []string{"target", "item", "detail"}, nil)
 	powerSupplyCapacityDesc = prometheus.NewDesc(prefix+"power_capacity", "PSU capacity in Watts", []string{"target", "item", "detail"}, nil)
 	powerSupplyModeDesc = prometheus.NewDesc(prefix+"power_mode", "Power Supply redundancy mode, value is always 0", []string{"target", "item", "status"}, nil)
 
-	fanStatusDesc = prometheus.NewDesc(prefix+"fan_up", "Status of fans (1 OK, 0 Something is wrong)", []string{"target", "item", "detail"}, nil)
+	fanStatusDesc = prometheus.NewDesc(prefix+"fan_up", "Status of fans (0 OK, 1 Something is wrong)", []string{"target", "item", "detail"}, nil)
 	fanSpeedDesc = prometheus.NewDesc(prefix+"fan_speed_percent", "Speed of fans, from 0 percent to 100", []string{"target", "item"}, nil)
 
 }
