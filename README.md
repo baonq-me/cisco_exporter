@@ -30,6 +30,7 @@ interfaces | Interfaces (transmitted/received: bytes/errors/drops, admin/oper st
 optics | Optical signals (tx/rx) | NX-OS/IOS XE/IOS
 
 ## Install
+
 ```bash
 go get -u github.com/lwlcom/cisco_exporter
 ```
@@ -79,12 +80,19 @@ features:
 
 ```
 
+## Monitoring
+
+Grafana dashboard can be found at [docker/grafana/dashboards/cisco.json](docker/grafana/dashboards/cisco.json)
+
+![alt text](docker/grafana/grafana.png)
+
 ## Third Party Components
 This software uses components of the following projects
 * Prometheus Go client library (https://github.com/prometheus/client_golang)
 
 ## License
-(c) Martin Poppen, 2018. Licensed under [MIT](LICENSE) license.
+- (c) Martin Poppen, 2018. Licensed under [MIT](LICENSE) license.
+- (c) Quoc-Bao Nguyen, 2025. Licensed under [MIT](LICENSE) license.
 
 ## Prometheus
 see https://prometheus.io/
