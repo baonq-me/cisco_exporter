@@ -28,18 +28,18 @@ services:
       context: .
       platforms:
         - linux/amd64
-      #  - linux/aarch64
+        - linux/aarch64
       dockerfile: Dockerfile
     #env_file:
     #  - .env
-    image: quocbao747/cisco_exporter:1.0
+    image: quocbao747/cisco_exporter:1.1
     container_name: cisco_exporter
     hostname: cisco_exporter
     domainname: cisco_exporter
     restart: always
     environment:
       TZ: Asia/Ho_Chi_Minh
-    platform: linux/amd64
+    #platform: linux/amd64
     volumes:
       - "/home/user/.ssh/id_rsa:/app/ssh.key"
     configs:
